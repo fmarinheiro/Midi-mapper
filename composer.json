@@ -1,0 +1,5 @@
+{
+    "require": {
+        "tmont/midiparser": "dev-master"
+    }
+}
