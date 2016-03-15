@@ -7,6 +7,8 @@ use Tmont\Midi\Emit\File;
 use Tmont\Midi\Emit\Track;
 use Tmont\Midi\Delta;
 use Tmont\Midi\Event;
+use Tmont\Midi\Event\NoteOnEvent;
+use Tmont\Midi\Event\NoteOffEvent;
 
 
 
@@ -51,9 +53,19 @@ foreach ($trackHeader as $unique => $theader) {
 
     $track = new Track();
 
-     foreach ($events[$unique] as $key => $chunk) {
+     foreach ($events[$unique] as $key => $event) {
 
-          $track->appendEvent($chunk, $deltas[$unique][$key]);
+          if ($event instanceof NoteOnEvent) {
+              $params = $event->getData();
+              $event = new NoteOnEvent($params[0], --$params[1], $params[2], $event->isContinuation());
+          }
+
+          if ($event instanceof NoteOffEvent) {
+              $params = $event->getData();
+              $event = new NoteOffEvent($params[0], --$params[1], $params[2], $event->isContinuation());
+          }
+
+          $track->appendEvent($event, $deltas[$unique][$key]);
 
      }
      $newFile->addTrack($track);
