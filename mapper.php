@@ -10,12 +10,24 @@ use Tmont\Midi\Event;
 use Tmont\Midi\Event\NoteOnEvent;
 use Tmont\Midi\Event\NoteOffEvent;
 
-
+$sourceFile = './input.mid';
+$destinationFile = './output.mid';
+$mapCsvFile = './map.csv';
 
 //create a new file parser
 $parser = new FileParser();
+echo 'Loading map file '.$mapCsvFile."...\n\n";
+$fileHandler = fopen($mapCsvFile, 'r');
+$map = array();
 
-$parser->load('./Michael_Jackson_-_Beat_It.mid');
+while (($data = fgetcsv($fileHandler)) !== false) {
+    $map[$data[0]] = $data[1];
+}
+var_dump($map);
+fclose($fileHandler);
+
+echo 'Loading source file '.$sourceFile."...\n\n";
+$parser->load($sourceFile);
 
 $state = $parser->getState();
 $trackHeader = array();
@@ -57,12 +69,25 @@ foreach ($trackHeader as $unique => $theader) {
 
           if ($event instanceof NoteOnEvent) {
               $params = $event->getData();
-              $event = new NoteOnEvent($params[0], --$params[1], $params[2], $event->isContinuation());
+
+              if (array_key_exists($params[1], $map)) {
+                echo "Mapping ".$params[1]." to ".$map[$params[1]]."\n\n\n";
+                $event = new NoteOnEvent($params[0], $map[$params[1]], $params[2], $event->isContinuation());
+              }  else {
+                  echo 'Note '.$params[1]." wasn't mapped...\n\n";
+              }
           }
 
           if ($event instanceof NoteOffEvent) {
               $params = $event->getData();
-              $event = new NoteOffEvent($params[0], --$params[1], $params[2], $event->isContinuation());
+
+              if (array_key_exists($params[1], $map)) {
+                echo "Mapping ".$params[1]." to ".$map[$params[1]]."\n\n\n";
+
+                $event = new NoteOffEvent($params[0], $map[$params[1]], $params[2], $event->isContinuation());
+              } else {
+                  echo 'Note '.$params[1]." wasn't mapped...\n\n";
+              }
           }
 
           $track->appendEvent($event, $deltas[$unique][$key]);
@@ -71,5 +96,8 @@ foreach ($trackHeader as $unique => $theader) {
      $newFile->addTrack($track);
 }
 
-$newFile->save('./newFile.mid');
+echo 'Saving map file '.$destinationFile."...\n\n";
+$newFile->save($destinationFile);
+
+echo "#########################Done#######################\n\n";
 
